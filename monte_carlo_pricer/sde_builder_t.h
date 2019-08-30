@@ -14,6 +14,7 @@ void gbm() {
 	double s{ 100.0 };
 
 	GeometricBrownianMotion<> gbm{ r,sigma,s };
+	std::cout << "Number of factors: " << GeometricBrownianMotion<>::FactorCount << "\n";
 	auto sde = gbm.model();
 	auto diffusion = gbm.diffusion();
 	auto drift = gbm.drift();
@@ -33,6 +34,7 @@ void cev() {
 	float beta{ 0.25f };
 
 	ConstantElasticityVariance<float> cev{ r,sigma,beta,s };
+	std::cout << "Number of factors: " << ConstantElasticityVariance<>::FactorCount << "\n";
 	auto sde = cev.model();
 	auto diffusion = cev.diffusion();
 	auto drift = cev.drift();
