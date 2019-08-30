@@ -40,9 +40,11 @@ namespace sde_builder {
 	class SdeBuilder<2, T> {
 	public:
 		virtual ~SdeBuilder() {}
-		virtual std::tuple<SdeComponent3Args<T>, SdeComponent3Args<T>> drifts() = 0;
-		virtual std::tuple<SdeComponent3Args<T>, SdeComponent3Args<T>> diffusions() = 0;
-		virtual std::tuple<std::shared_ptr<Sde<2,T>>, std::shared_ptr<Sde<2,T>>> models() = 0;
+		virtual  SdeComponent3Args<T> drift1() = 0;
+		virtual  SdeComponent3Args<T> diffusion1() = 0;
+		virtual  SdeComponent3Args<T> drift2() = 0;
+		virtual  SdeComponent3Args<T> diffusion2() = 0;
+		virtual std::tuple<std::shared_ptr<Sde<2,T>>, std::shared_ptr<Sde<2,T>>> model() = 0;
 		SdeModelType modelType()const { return SdeModelType::twoFactor; }
 		enum { FactorCount = 2 };
 	};

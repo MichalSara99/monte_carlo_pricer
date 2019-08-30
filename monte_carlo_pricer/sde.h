@@ -49,41 +49,28 @@ namespace sde {
 	template<typename T>
 	class Sde<2, T> {
 	private:
-		T initCond1_;
-		T initCond2_;
-		SdeComponent3Args<T> drift1_;
-		SdeComponent3Args<T> diffusion1_;
-		SdeComponent3Args<T> drift2_;
-		SdeComponent3Args<T> diffusion2_;
+		T initCond_;
+		SdeComponent3Args<T> drift_;
+		SdeComponent3Args<T> diffusion_;
 
 	public:
 		Sde() = default;
-		Sde(ISde2<T> const &sde1Components, ISde2<T> const &sde2Components, 
-			T const &initialCondition1 = 0.0, T const &initialCondition2 = 0.0)
-			:drift1_{ std::get<0>(sde1Components) }, diffusion1_{ std::get<1>(sde1Components) },
-			drift2_{ std::get<0>(sde2Components) }, diffusion2_{ std::get<1>(sde2Components) },
-			initCond1_{ initialCondition1 }, initCond2_{ initialCondition2 } {}
+		Sde(ISde2<T> const &sdeComponents,  T const &initialCondition = 0.0)
+			:drift_{ std::get<0>(sdeComponents) }, diffusion_{ std::get<1>(sdeComponents) },
+			initCond_{ initialCondition } {}
 
 		Sde(Sde<2, T> const &copy)
-			:drift1_{ copy.drift1_ }, diffusion1_{ copy.diffusion1_ },
-			drift2_{ copy.drift2_ }, diffusion2_{ copy.diffusion2_ },
-			initCond1_{ copy.initCond1_ }, initCond2_{ copy.initCond2_ } {}
+			:drift_{ copy.drift_ }, diffusion_{ copy.diffusion_ },
+			initCond_{ copy.initCond_ } {}
 
-		T drift1(T const &first, T const &second, T const &third)const {
-			return drift1_(first, second, third);
+		T drift(T const &first, T const &second, T const &third)const {
+			return drift_(first, second, third);
 		}
 
-		T diffusion1(T const &first, T const &second,T const &third)const {
-			return diffusion1_(first, second, third);
+		T diffusion(T const &first, T const &second,T const &third)const {
+			return diffusion_(first, second, third);
 		}
 
-		T drift2(T const &first, T const &second, T const &third)const {
-			return drift2_(first, second, third);
-		}
-
-		T diffusion2(T const &first, T const &second, T const &third)const {
-			return diffusion2_(first, second, third);
-		}
 	};
 
 
