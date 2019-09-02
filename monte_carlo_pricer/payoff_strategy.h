@@ -20,59 +20,62 @@ namespace payoff {
 		virtual double payoff(UnderlyingType const &underlying)const = 0;
 	};
 
-
-	class PlainCallStrategy: public PayoffStrategy<double> {
+	template<typename T=double>
+	class PlainCallStrategy: public PayoffStrategy<T> {
 	private:
-		double strike_;
+		T strike_;
 	public:
-		PlainCallStrategy(double strike)
+		PlainCallStrategy(T strike)
 			:strike_{ strike }{}
 
-		double payoff(double const &underlying)const override {
-			return std::max(0.0, underlying - strike_);
+		double payoff(T const &underlying)const override {
+			return static_cast<double>(std::max(0.0, underlying - strike_));
 		}
 
 	};
 
-	class PlainPutStrategy :public PayoffStrategy<double> {
+	template<typename T=double>
+	class PlainPutStrategy :public PayoffStrategy<T> {
 	private:
-		double strike_;
+		T strike_;
 	public:
-		PlainPutStrategy(double strike)
+		PlainPutStrategy(T strike)
 			:strike_{ strike } {}
 
-		double payoff(double const &underlying)const override {
-			return std::max(0.0, strike_ - underlying);
+		double payoff(T const &underlying)const override {
+			return static_cast<double>(std::max(0.0, strike_ - underlying));
 		}
 	};
 
-	class AsianAvgCallStrategy :public PayoffStrategy<PathValuesType<double>> {
+	template<typename T = double>
+	class AsianAvgCallStrategy :public PayoffStrategy<PathValuesType<T>> {
 	private:
-		double strike_;
+		T strike_;
 	public:
-		AsianAvgCallStrategy(double strike)
+		AsianAvgCallStrategy(T strike)
 			:strike_{strike}{}
 
-		double payoff(PathValuesType<double> const &underlying)const {
+		double payoff(PathValuesType<T> const &underlying)const {
 			std::size_t N = underlying.size();
 			auto sum = std::accumulate(underlying.begin(), underlying.end(), 0.0);
 			auto avg = (sum / static_cast<double>(N));
-			return std::max(0.0, avg - strike_);
+			return static_cast<double>(std::max(0.0, avg - strike_));
 		}
 	};
 
-	class AsianAvgPutStrategy :public PayoffStrategy<PathValuesType<double>> {
+	template<typename T = double>
+	class AsianAvgPutStrategy :public PayoffStrategy<PathValuesType<T>> {
 	private:
-		double strike_;
+		T strike_;
 	public:
-		AsianAvgPutStrategy(double strike)
+		AsianAvgPutStrategy(T strike)
 			:strike_{ strike } {}
 
-		double payoff(PathValuesType<double> const &underlying)const {
+		double payoff(PathValuesType<T> const &underlying)const {
 			std::size_t N = underlying.size();
 			auto sum = std::accumulate(underlying.begin(), underlying.end(), 0.0);
 			auto avg = (sum / static_cast<double>(N));
-			return std::max(0.0, strike_ - avg);
+			return static_cast<double>(std::max(0.0, strike_ - avg));
 		}
 	};
 

@@ -10,8 +10,8 @@ using namespace std::placeholders;
 void payoff1() {
 	// Binding the already existing strategy:
 	double call_strike{ 20.0 };
-	PlainCallStrategy call_s{ call_strike };
-	auto call_payoff = std::bind(&PlainCallStrategy::payoff, call_s, _1);
+	PlainCallStrategy<> call_s{ call_strike };
+	auto call_payoff = std::bind(&PlainCallStrategy<>::payoff, call_s, _1);
 	Payoff<double> pay_call{ call_payoff };
 	std::cout << "Enter price of underlying: ";
 	double S;
@@ -29,8 +29,8 @@ void payoff2() {
 	double init{ 20.0 };
 	std::generate(prices.begin(), prices.end(), [&]() {return init * std::exp(normals(rd)); });
 	double asian_strike{ 21.0 };
-	AsianAvgCallStrategy asian_s{ asian_strike };
-	auto call_payoff = std::bind(&AsianAvgCallStrategy::payoff, asian_s, _1);
+	AsianAvgCallStrategy<> asian_s{ asian_strike };
+	auto call_payoff = std::bind(&AsianAvgCallStrategy<>::payoff, asian_s, _1);
 	auto asian_pay = Payoff<PathValuesType<double>>{ call_payoff };
 	std::cout << "Average asian call payoff ( K = " << asian_strike << "): " << asian_pay.payoff(prices);
 	std::cout << "\n";

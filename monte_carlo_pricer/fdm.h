@@ -8,8 +8,7 @@
 
 namespace finite_difference_method {
 
-	using mc_types::ISde1;
-	using mc_types::ISde2;
+	using mc_types::ISde;
 	using sde::Sde;
 
 	template<std::size_t Factor,
