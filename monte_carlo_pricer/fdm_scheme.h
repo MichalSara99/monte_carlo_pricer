@@ -9,9 +9,9 @@ namespace finite_difference_method {
 
 	template<typename T = double,
 			typename =typename std::enable_if<std::is_arithmetic<T>::value>::type>
-	class FdmScheme {
+	class Scheme {
 	public:
-		virtual ~FDMScheme(){}
+		virtual ~Scheme(){}
 
 
 
@@ -19,13 +19,13 @@ namespace finite_difference_method {
 
 	template<typename T = double,
 		typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
-	class EulerFdmScheme:public FdmScheme<T> {
+	class EulerScheme:public Scheme<T> {
 
 	};
 
 	template<typename T = double,
 		typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
-	class MilsteinFdmScheme:public FdmScheme<T> {
+	class MilsteinScheme:public Scheme<T> {
 
 
 	};
