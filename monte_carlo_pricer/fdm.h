@@ -9,7 +9,11 @@
 namespace finite_difference_method {
 
 	using mc_types::ISde;
+	using mc_types::PathValuesType;
+	using mc_types::TimePointsType;
+	using mc_types::FDMScheme;
 	using sde::Sde;
+
 
 	template<std::size_t FactorCount,typename T,typename ...Ts>
 	class FdmBuilder {
@@ -27,44 +31,70 @@ namespace finite_difference_method {
 
 	public:
 		FdmBuilder(std::shared_ptr<Sde<T,Ts...>> const &model,T const &terminationTime,
-			std::size_t numberSteps = 10000)
+			std::size_t numberSteps = 360)
 			:model_{ model },terminationTime_ {terminationTime},numberSteps_{numberSteps}{}
 
 		FdmBuilder(ISde<T,Ts...> const &isde,T const &init, T const &terminationTime,
-			std::size_t numberSteps = 10000)
+			std::size_t numberSteps = 360)
 			:model_{ new Sde<T,Ts...>{isde,init} }, terminationTime_{ terminationTime },
 			numberSteps_{ numberSteps } {}
+
+		TimePointsType<T> timeResolution()const {
+			TimePointsType<T> points(numberSteps_ + 1);
+			auto delta = (terminationTime_ / static_cast<T>(numberSteps_));
+			std::size_t i = 0;
+			std::generate(points.begin(), points.end(), [&i, &delta]() {return delta * i++; });
+			return points;
+		}
+
+		virtual PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,FDMScheme scheme = FDMScheme::EulerScheme)const=0;
+
 	};
 
 
-	//Finite Difference Method builder for two-factor models
+	// Finite Difference Method builder for two-factor models:
+	// Factor1 always depends on factor2 (process driven by factor2 enters factor 1)
 	template<typename T,typename ...Ts>
 	class FdmBuilder<2, T, Ts...> {
 	protected:
 		T terminationTime_;
+		T correlation_;
 		std::size_t numberSteps_;
 		std::shared_ptr<Sde<T,Ts...>> factor1_;
 		std::shared_ptr<Sde<T,Ts...>> factor2_;
 
 	public:
 		FdmBuilder(std::tuple<std::shared_ptr<Sde<T,Ts...>>, std::shared_ptr<Sde<T, Ts...>>> const &model,
-			T const &terminationTime,std::size_t numberSteps = 10000)
+			T const &terminationTime,T const &correlation = 0.0,std::size_t numberSteps = 360)
 			:factor1_{ std::get<0>(model) },factor2_{std::get<1>(model)},
-			terminationTime_{ terminationTime }, numberSteps_{ numberSteps } {}
+			terminationTime_{ terminationTime }, correlation_{ correlation },
+			numberSteps_ {numberSteps} {}
 
 		FdmBuilder(std::shared_ptr<Sde<T, Ts...>> const &factor1,
 			std::shared_ptr<Sde<T, Ts...>> const &factor2,
-			T const &terminationTime, std::size_t numberSteps = 10000)
+			T const &terminationTime, T const &correlation = 0.0, std::size_t numberSteps = 360)
 			:factor1_{factor1 }, factor2_{ factor2 },
-			terminationTime_{ terminationTime }, numberSteps_{ numberSteps } {}
+			terminationTime_{ terminationTime },correlation_{correlation},
+			numberSteps_{ numberSteps } {}
 
 		FdmBuilder(ISde<T,Ts...> const &isde1, T const &init1,
 			ISde<T, Ts...> const &isde2, T const &init2,
-			T const &terminationTime,std::size_t numberSteps = 10000)
+			T const &terminationTime,T const & correlation=0.0,std::size_t numberSteps = 360)
 			:factor1_{ new Sde<T,Ts...>{ isde1,init1 } },
 			factor2_{ new Sde<T,Ts...>{ isde2,init2 } },
 			terminationTime_{ terminationTime },
+			correlation_{correlation},
 			numberSteps_{ numberSteps } {}
+
+		TimePointsType<T> timeResolution()const {
+			TimePointsType<T> points(numberSteps_ + 1);
+			auto delta = (terminationTime_ / static_cast<T>(numberSteps_));
+			std::size_t i = 0;
+			std::generate(points.begin(), points.end(), [&i, &delta]() {return delta * i++; });
+			return points;
+		}
+
+		virtual PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,FDMScheme scheme = FDMScheme::EulerScheme)const = 0;
 	};
 
 
@@ -80,13 +110,42 @@ namespace finite_difference_method {
 	class Fdm<1, T> :public FdmBuilder<1, T, T,T> {
 	public:
 		Fdm(std::shared_ptr<Sde<T, T, T>> const &model, T const &terminationTime,
-			std::size_t numberSteps = 10000)
+			std::size_t numberSteps = 360)
 			:FdmBuilder<1,T,T,T>{model,terminationTime,numberSteps}{}
 		Fdm(ISde<T, T,T> const &isde, T const &init, T const &terminationTime,
-			std::size_t numberSteps = 10000)
+			std::size_t numberSteps = 360)
 			:FdmBuilder<1,T,T,T>{isde,init,terminationTime,numberSteps}{}
 
+		PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,
+													FDMScheme scheme = FDMScheme::EulerScheme)const override{
 
+			kernel<T> generator = nullptr;
+			T delta = (this->terminationTime_ / static_cast<T>(this->numberSteps_));
+
+			switch (scheme) {
+			case FDMScheme::EulerScheme:
+			{
+				EulerScheme<1, T> euler(this->model_, delta, this->numberSteps_);
+				generator = euler;
+			}
+			break;
+			case FDMScheme::MilsteinScheme:
+			{
+				MilsteinScheme<1, T> milstein(this->model_, delta, this->numberSteps_);
+				generator = milstein;
+			}
+			break;
+			}
+
+			PathValuesType<PathValuesType<T>> paths(iterations);
+			PathValuesType<T> path(this->numberSteps_);
+
+			for (std::size_t i = 0; i < paths.size(); ++i) {
+				generator(path);
+				paths[i] = path;
+			}
+			return paths;
+		}
 
 	};
 
@@ -94,19 +153,25 @@ namespace finite_difference_method {
 	class Fdm<2, T> :public FdmBuilder<2, T, T, T,T> {
 	public:
 		Fdm(std::tuple<std::shared_ptr<Sde<T, T,T,T>>, std::shared_ptr<Sde<T, T,T,T>>> const &model,
-			T const &terminationTime, std::size_t numberSteps = 10000)
-			:FdmBuilder<2, T, T,T,T>{ model,terminationTime,numberSteps } {}
+			T const &terminationTime,T const &correlation = 0.0, std::size_t numberSteps = 360)
+			:FdmBuilder<2, T, T,T,T>{ model,terminationTime,correlation,numberSteps } {}
 
 		Fdm(std::shared_ptr<Sde<T, T, T, T>> const &factor1,
 			std::shared_ptr<Sde<T, T, T, T>> const &factor2,
-			T const &terminationTime, std::size_t numberSteps = 10000)
-			:FdmBuilder<2, T, T, T,T>{ factor1,factor2,terminationTime,numberSteps } {}
+			T const &terminationTime, T const &correlation = 0.0,std::size_t numberSteps = 360)
+			:FdmBuilder<2, T, T, T,T>{ factor1,factor2,terminationTime,correlation,numberSteps } {}
 
 		Fdm(ISde<T, T,T,T> const &isde1, T const &init1,
 			ISde<T, T,T,T> const &isde2, T const &init2,
-			T const &terminationTime, std::size_t numberSteps = 10000)
-			:FdmBuilder<2, T, T, T,T>{ isde1,init1,isde2,init2,terminationTime,numberSteps } {}
+			T const &terminationTime,T const &correlation = 0.0,
+			std::size_t numberSteps = 360)
+			:FdmBuilder<2, T, T, T,T>{ isde1,init1,isde2,init2,terminationTime,
+			correlation,numberSteps } {}
 
+
+		PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,FDMScheme scheme = FDMScheme::EulerScheme)const override {
+			throw std::exception("Not yet implemented");
+		}
 
 	};
 

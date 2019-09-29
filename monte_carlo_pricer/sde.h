@@ -25,6 +25,8 @@ namespace sde {
 			:drift_{ copy.drift_ }, diffusion_{ copy.diffusion_ },
 			initCond_{ copy.initCond_ } {}
 
+		inline T initCondition()const { return initCond_; }
+
 		T drift(Ts...args)const {
 			return drift_(args...);
 		}

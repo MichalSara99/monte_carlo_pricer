@@ -217,12 +217,14 @@ namespace sde_builder {
 		T kappa_;
 		T theta_;
 		T etha_;
+		// correlation between factors:
+		T rho_;
 
 	public:
 		HestonModel(T const &mu, T const &sigma, T const &kappa,T const &theta,T const &etha,
-			T const &init1,T const &init2)
+			T const &init1,T const &init2,T const &rho=0.0)
 			:mu_{ mu }, sigma_{ sigma }, kappa_{ kappa }, theta_{theta},etha_{etha},
-			init1_ {init1}, init2_{init2} {}
+			init1_{ init1 }, init2_{ init2 }, rho_{rho} {}
 
 		HestonModel()
 			:HestonModel{ 0.5,0.05,0.05,0.05,0.05,1.0,0.01} {}
@@ -230,7 +232,8 @@ namespace sde_builder {
 		HestonModel(HestonModel<T> const &copy)
 			:mu_{ copy.mu_ }, sigma_{ copy.sigma_ }, kappa_{ copy.kappa_ },
 			theta_{ copy.theta_ }, etha_{ copy.etha_ },
-			init1_{ copy.init1_ }, init2_{ copy.init2_ } {}
+			init1_{ copy.init1_ }, init2_{ copy.init2_ },
+			rho_{copy.rho_} {}
 
 		HestonModel& operator=(HestonModel<T> const &copy) {
 			if (this != &copy) {
@@ -241,6 +244,7 @@ namespace sde_builder {
 				etha_ = copy.etha_;
 				init1_ = copy.init1_;
 				init2_ = copy.init2_;
+				rho_ = copy.rho_;
 			}
 			return *this;
 		}
@@ -252,6 +256,7 @@ namespace sde_builder {
 		inline T const &etha()const { return etha_; }
 		inline T const &init1()const { return init1_; }
 		inline T const &init2()const { return init2_; }
+		inline T const &rho()const { return rho_; }
 
 		SdeComponent<T,T,T,T> drift1()const override {
 			return [this](T time, T underlyingPrice, T varianceProcess) {

@@ -13,6 +13,9 @@ namespace mc_types {
 	using PayoffFunType = std::function<ReturnType(ArgType)>;
 
 	template<typename T>
+	using TimePointsType = std::vector<T>;
+
+	template<typename T>
 	using PathValuesType = std::vector<T>;
 
 	template<typename T,typename ...Args>
@@ -23,7 +26,9 @@ namespace mc_types {
 	template<typename T,typename ...Ts>
 	using ISde = std::tuple<SdeComponent<T,Ts...>, SdeComponent<T,Ts...>>;
 
-	enum class SdeModelType { oneFactor, twoFactor };
+	enum class SdeModelType { oneFactor ,twoFactor};
+
+	enum class FDMScheme { EulerScheme, MilsteinScheme};
 
 }
 
