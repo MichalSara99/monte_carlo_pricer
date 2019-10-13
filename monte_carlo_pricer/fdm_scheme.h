@@ -11,6 +11,7 @@ namespace finite_difference_method {
 
 	using mc_types::TimePointsType;
 	using mc_utilities::PartialCentralDifference;
+	using mc_utilities::withRespectTo;
 
 
 	template<typename T>
@@ -43,6 +44,8 @@ namespace finite_difference_method {
 					numberSteps_{ numberSteps } {}
 
 		virtual PathValuesType<T> operator()(std::random_device::result_type seed) = 0;
+		virtual PathValuesType<T> operator()(std::random_device::result_type seed,
+			TimePointsType<T> &timePoints) = 0;
 	};
 
 	// Scheme builder for two-factor models:
@@ -105,6 +108,10 @@ namespace finite_difference_method {
 			return path;
 		}
 
+		PathValuesType<T> operator()(std::random_device::result_type seed,TimePointsType<T> &timePoints)override {
+			throw std::exception("Not yet implemented.");
+		}
+
 	};
 
 
@@ -120,6 +127,7 @@ namespace finite_difference_method {
 	private:
 		std::normal_distribution<T> normal_;
 		std::mt19937 mt_;
+		T step_ = 10e-6;
 
 	public:
 		MilsteinScheme(std::shared_ptr<Sde<T, T, T>> const &model,
@@ -130,6 +138,12 @@ namespace finite_difference_method {
 			TimePointsType<T> const &timePoints, std::size_t numberSteps)
 			:SchemeBuilder<1, T, T, T>{model,timePoints,numberSteps}{}
 
+		inline T diffusionPrime(T time,T price) {
+			auto fun = pcd_(std::bind(&Sde<T, T, T>::diffusion, *(this->model_), std::placeholders::_1, std::placeholders::_2),
+				withRespectTo::secondArg);
+			return fun(time, price);
+		}
+
 		PathValuesType<T> operator()(std::random_device::result_type seed) override {
 			this->mt_.seed(seed);
 			PathValuesType<T> path(this->numberSteps_);
@@ -137,17 +151,21 @@ namespace finite_difference_method {
 			T z{};
 			for (std::size_t i = 1; i < path.size(); ++i) {
 				z = normal_(mt_);
-				auto diffusion_proc = std::bind(&Sde<T,T,T>::diffusion,*(this->model_),
-												(i - 1) * (this->delta_),std::placeholders::_1);
-				auto diffusion_prime = PartialCentralDifference<1, T>()(std::forward<decltype(diffusion_proc)>(diffusion_proc));
 				path[i] = path[i - 1] +
 					this->model_->drift((i - 1)*(this->delta_), path[i - 1])*(this->delta_) +
 					this->model_->diffusion((i - 1)*(this->delta_), path[i - 1])*
 					std::sqrt((this->delta_)) * z +
-					0.5*this->model_->diffusion((i - 1) * (this->delta_), path[i - 1]) * diffusion_prime(path[i - 1])*
+					0.5*this->model_->diffusion((i - 1) * (this->delta_), path[i - 1]) *
+					((this->model_->diffusion((i - 1) * (this->delta_), path[i - 1] + 0.5*(this->step_)) - 
+						this->model_->diffusion((i - 1) * (this->delta_), path[i - 1] - 0.5*(this->step_)))/(this->step_))*
 					((std::sqrt(this->delta_)*z)*(std::sqrt(this->delta_)*z) - (this->delta_));
 			}
 			return path;
+		}
+
+		PathValuesType<T> operator()(std::random_device::result_type seed,
+			TimePointsType<T> &timePoints)override {
+			throw std::exception("Not yet implemented.");
 		}
 
 
