@@ -5,6 +5,8 @@
 #include"mc_types.h"
 #include"fdm_scheme.h"
 #include"sde.h"
+#include<thread>
+#include<future>
 
 namespace finite_difference_method {
 
@@ -47,7 +49,7 @@ namespace finite_difference_method {
 			return points;
 		}
 
-		virtual PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,FDMScheme scheme = FDMScheme::EulerScheme)const=0;
+		virtual PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,FDMScheme scheme = FDMScheme::EulerScheme)=0;
 
 	};
 
@@ -94,7 +96,7 @@ namespace finite_difference_method {
 			return points;
 		}
 
-		virtual PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,FDMScheme scheme = FDMScheme::EulerScheme)const = 0;
+		virtual PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,FDMScheme scheme = FDMScheme::EulerScheme) = 0;
 	};
 
 
@@ -108,6 +110,8 @@ namespace finite_difference_method {
 
 	template<typename T>
 	class Fdm<1, T> :public FdmBuilder<1, T, T,T> {
+	private:
+		std::random_device rd_;
 	public:
 		Fdm(std::shared_ptr<Sde<T, T, T>> const &model, T const &terminationTime,
 			std::size_t numberSteps = 360)
@@ -117,33 +121,40 @@ namespace finite_difference_method {
 			:FdmBuilder<1,T,T,T>{isde,init,terminationTime,numberSteps}{}
 
 		PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,
-													FDMScheme scheme = FDMScheme::EulerScheme)const override{
+													FDMScheme scheme = FDMScheme::EulerScheme)override{
 
-			kernel<T> generator = nullptr;
+			asyncKernel<T> asyncGenerator = nullptr;
 			T delta = (this->terminationTime_ / static_cast<T>(this->numberSteps_));
 
 			switch (scheme) {
 			case FDMScheme::EulerScheme:
 			{
 				EulerScheme<1, T> euler(this->model_, delta, this->numberSteps_);
-				generator = euler;
+				asyncGenerator = euler;
 			}
 			break;
 			case FDMScheme::MilsteinScheme:
 			{
 				MilsteinScheme<1, T> milstein(this->model_, delta, this->numberSteps_);
-				generator = milstein;
+				asyncGenerator = milstein;
 			}
 			break;
 			}
 
-			PathValuesType<PathValuesType<T>> paths(iterations);
-			PathValuesType<T> path(this->numberSteps_);
+			PathValuesType<std::future<PathValuesType<T>>> futures;
+			futures.reserve(iterations);
 
-			for (std::size_t i = 0; i < paths.size(); ++i) {
-				generator(path);
-				paths[i] = path;
+			for (std::size_t i = 0; i < iterations; ++i) {
+				futures.emplace_back(std::async(std::launch::async, asyncGenerator, rd_()));
 			}
+
+			PathValuesType<PathValuesType<T>> paths;
+			paths.reserve(iterations);
+
+			for (auto &path : futures) {
+				paths.emplace_back(std::move(path.get()));
+			}
+
 			return paths;
 		}
 
@@ -169,7 +180,7 @@ namespace finite_difference_method {
 			correlation,numberSteps } {}
 
 
-		PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,FDMScheme scheme = FDMScheme::EulerScheme)const override {
+		PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,FDMScheme scheme = FDMScheme::EulerScheme) override {
 			throw std::exception("Not yet implemented");
 		}
 

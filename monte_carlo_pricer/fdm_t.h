@@ -5,7 +5,8 @@
 #include"sde_builder.h"
 #include"fdm.h"
 #include<iostream>
-#include<ctime>
+#include<chrono>
+
 
 using namespace finite_difference_method;
 using namespace sde_builder;
@@ -27,15 +28,24 @@ void fdm_gbm() {
 	auto times = gbm_fdm.timeResolution();
 
 	std::cout << "timing: \n";
-	auto start = clock();
-	auto paths_euler = gbm_fdm(30000);
-	auto end = clock() - start;
-	std::cout << "Euler took: " << (end / static_cast<float>(CLOCKS_PER_SEC)) << "\n";
-	start = clock();
-	auto paths_milstein = gbm_fdm(30000,FDMScheme::MilsteinScheme);
-	end = clock() - start;
-	std::cout << "Milstein took: " << (end / static_cast<float>(CLOCKS_PER_SEC)) << "\n";
+	auto start = std::chrono::system_clock::now();
+	auto paths_euler = gbm_fdm(50000);
+	auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
+	std::cout << "Euler took: " << end << " seconds\n";
+	start = std::chrono::system_clock::now();
+	auto paths_milstein = gbm_fdm(50000,FDMScheme::MilsteinScheme);
+	end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
+	std::cout << "Milstein took: " << end << " seconds\n";
 	std::cout << "\n";
+
+	// To see few generated values:
+	for (std::size_t t = 0; t < 30; ++t) {
+		std::cout << t << " paths: \n";
+		for (std::size_t v = 0; v < 10; ++v) {
+			std::cout << paths_euler[t][v] << ", ";
+		}
+		std::cout << "\n";
+	}
 
 }
 

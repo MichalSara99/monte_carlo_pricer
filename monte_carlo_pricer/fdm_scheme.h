@@ -12,8 +12,9 @@ namespace finite_difference_method {
 	using mc_types::TimePointsType;
 	using mc_utilities::PartialCentralDifference;
 
+
 	template<typename T>
-	using kernel = std::function<void(PathValuesType<T> &)>;
+	using asyncKernel = std::function<PathValuesType<T>(std::random_device::result_type)>;
 
 	template<std::size_t FactorCount,typename T,typename ...Ts>
 	class SchemeBuilder {
@@ -41,7 +42,7 @@ namespace finite_difference_method {
 					:model_{model}, timePoints_{ timePoints },
 					numberSteps_{ numberSteps } {}
 
-		virtual void operator()(PathValuesType<T> &values) = 0;
+		virtual PathValuesType<T> operator()(std::random_device::result_type seed) = 0;
 	};
 
 	// Scheme builder for two-factor models:
@@ -91,15 +92,19 @@ namespace finite_difference_method {
 			:SchemeBuilder<1, T, T, T>{ model,timePoints,numberSteps } {
 		}
 
-		void operator()(PathValuesType<T> &values) {
-			values[0] = this->model_->initCondition();
-			for (std::size_t i = 1; i < values.size(); ++i) {
-				values[i] = values[i - 1] +
-					this->model_->drift((i-1)*(this->delta_), values[i - 1])*(this->delta_) +
-					this->model_->diffusion((i - 1)*(this->delta_), values[i - 1]) * 
+		PathValuesType<T> operator()(std::random_device::result_type seed) override {
+			this->mt_.seed(seed );
+			PathValuesType<T> path(this->numberSteps_);
+			path[0] = this->model_->initCondition();
+			for (std::size_t i = 1; i < path.size(); ++i) {
+				path[i] = path[i - 1] +
+					this->model_->drift((i - 1)*(this->delta_), path[i - 1])*(this->delta_) +
+					this->model_->diffusion((i - 1)*(this->delta_), path[i - 1]) *
 					std::sqrt((this->delta_)) * normal_(mt_);
 			}
+			return path;
 		}
+
 	};
 
 
@@ -125,21 +130,24 @@ namespace finite_difference_method {
 			TimePointsType<T> const &timePoints, std::size_t numberSteps)
 			:SchemeBuilder<1, T, T, T>{model,timePoints,numberSteps}{}
 
-		void operator()(PathValuesType<T> &values) {
-			values[0] = this->model_->initCondition();
+		PathValuesType<T> operator()(std::random_device::result_type seed) override {
+			this->mt_.seed(seed);
+			PathValuesType<T> path(this->numberSteps_);
+			path[0] = this->model_->initCondition();
 			T z{};
-			for (std::size_t i = 1; i < values.size(); ++i) {
+			for (std::size_t i = 1; i < path.size(); ++i) {
 				z = normal_(mt_);
 				auto diffusion_proc = std::bind(&Sde<T,T,T>::diffusion,*(this->model_),
 												(i - 1) * (this->delta_),std::placeholders::_1);
 				auto diffusion_prime = PartialCentralDifference<1, T>()(std::forward<decltype(diffusion_proc)>(diffusion_proc));
-				values[i] = values[i - 1] +
-					this->model_->drift((i - 1)*(this->delta_), values[i - 1])*(this->delta_) +
-					this->model_->diffusion((i - 1)*(this->delta_), values[i - 1])*
+				path[i] = path[i - 1] +
+					this->model_->drift((i - 1)*(this->delta_), path[i - 1])*(this->delta_) +
+					this->model_->diffusion((i - 1)*(this->delta_), path[i - 1])*
 					std::sqrt((this->delta_)) * z +
-					0.5*this->model_->diffusion((i - 1) * (this->delta_), values[i - 1]) * diffusion_prime(values[i - 1])*
+					0.5*this->model_->diffusion((i - 1) * (this->delta_), path[i - 1]) * diffusion_prime(path[i - 1])*
 					((std::sqrt(this->delta_)*z)*(std::sqrt(this->delta_)*z) - (this->delta_));
 			}
+			return path;
 		}
 
 
