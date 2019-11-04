@@ -65,9 +65,26 @@ void fdm_heston() {
 	HestonModel<float> hest{ mu,sigma,kappa,theta,etha,stock_init,var_init };
 	std::cout << "Number of factors: " << HestonModel<>::FactorCount << "\n";
 
-	Fdm<HestonModel<>::FactorCount, float> heston_fdm{ hest.model(),1.0 };
+	constexpr std::size_t factors = HestonModel<>::FactorCount;
+	Fdm<HestonModel<>::FactorCount, float> heston_fdm{ hest.model(),1.0,0.8f };
+	auto times = heston_fdm.timeResolution();
 
+	std::cout << "timing: \n";
+	auto start = std::chrono::system_clock::now();
+	auto paths_euler = heston_fdm(50000);
+	auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
+	std::cout << "Euler took: " << end << " seconds\n";
+	start = std::chrono::system_clock::now();
+	std::cout << "\n";
 
+	// To see few generated values:
+	for (std::size_t t = 0; t < 30; ++t) {
+		std::cout << t << " paths: \n";
+		for (std::size_t v = 0; v < 10; ++v) {
+			std::cout << paths_euler[t][v] << ", ";
+		}
+		std::cout << "\n";
+	}
 }
 
 

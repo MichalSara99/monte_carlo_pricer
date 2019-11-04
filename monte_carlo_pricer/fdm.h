@@ -82,21 +82,21 @@ namespace finite_difference_method {
 
 	public:
 		FdmBuilder(std::tuple<std::shared_ptr<Sde<T,Ts...>>, std::shared_ptr<Sde<T, Ts...>>> const &model,
-			T const &terminationTime,T const &correlation = 0.0,std::size_t numberSteps = 360)
+			T const &terminationTime,T correlation = 0.0,std::size_t numberSteps = 360)
 			:factor1_{ std::get<0>(model) },factor2_{std::get<1>(model)},
 			terminationTime_{ terminationTime }, correlation_{ correlation },
 			numberSteps_ {numberSteps} {}
 
 		FdmBuilder(std::shared_ptr<Sde<T, Ts...>> const &factor1,
 			std::shared_ptr<Sde<T, Ts...>> const &factor2,
-			T const &terminationTime, T const &correlation = 0.0, std::size_t numberSteps = 360)
+			T const &terminationTime, T correlation = 0.0, std::size_t numberSteps = 360)
 			:factor1_{factor1 }, factor2_{ factor2 },
 			terminationTime_{ terminationTime },correlation_{correlation},
 			numberSteps_{ numberSteps } {}
 
 		FdmBuilder(ISde<T,Ts...> const &isde1, T const &init1,
 			ISde<T, Ts...> const &isde2, T const &init2,
-			T const &terminationTime,T const & correlation=0.0,std::size_t numberSteps = 360)
+			T const &terminationTime,T correlation=0.0,std::size_t numberSteps = 360)
 			:factor1_{ new Sde<T,Ts...>{ isde1,init1 } },
 			factor2_{ new Sde<T,Ts...>{ isde2,init2 } },
 			terminationTime_{ terminationTime },
@@ -104,19 +104,19 @@ namespace finite_difference_method {
 			numberSteps_{ numberSteps } {}
 
 		FdmBuilder(std::tuple<std::shared_ptr<Sde<T, Ts...>>, std::shared_ptr<Sde<T, Ts...>>> const &model,
-				TimePointsType<T> const &timePoints, T const &correlation = 0.0)
+				TimePointsType<T> const &timePoints, T correlation = 0.0)
 			:factor1_{ std::get<0>(model) }, factor2_{ std::get<1>(model) }, timePoints_{ timePoints },
 			correlation_{ correlation }, timePointsOn_{true} {}
 
 		FdmBuilder(std::shared_ptr<Sde<T, Ts...>> const &factor1,
 			std::shared_ptr<Sde<T, Ts...>> const &factor2,
-			TimePointsType<T> const &timePoints, T const &correlation = 0.0)
+			TimePointsType<T> const &timePoints, T correlation = 0.0)
 			:factor1_{ factor1 }, factor2_{ factor2 }, timePoints_{ timePoints },
 			correlation_{ correlation }, timePointsOn_{ true } {}
 
 		FdmBuilder(ISde<T, Ts...> const &isde1, T const &init1,
 			ISde<T, Ts...> const &isde2, T const &init2,
-			TimePointsType<T> const &timePoints, T const & correlation = 0.0)
+			TimePointsType<T> const &timePoints, T correlation = 0.0)
 			:factor1_{ new Sde<T,Ts...>{ isde1,init1 } },
 			factor2_{ new Sde<T,Ts...>{ isde2,init2 } },
 			timePoints_{ timePoints },correlation_{ correlation }, timePointsOn_{true} {}
@@ -168,22 +168,37 @@ namespace finite_difference_method {
 		PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,
 													FDMScheme scheme = FDMScheme::EulerScheme)override{
 
-			asyncKernel<T> asyncGenerator = nullptr;
+			asyncKernel<T,std::random_device::result_type> asyncGenerator = nullptr;
+			asyncKernel<T,std::random_device::result_type, TimePointsType<T>&> asyncGeneratorTP = nullptr;
 			T delta = (this->terminationTime_ / static_cast<T>(this->numberSteps_));
 
-			switch (scheme) {
+			switch (scheme) { 
 			case FDMScheme::EulerScheme:
 			{
-				//if(this->timePointsOn_ == false)
-				EulerScheme<1, T> euler(this->model_, delta, this->numberSteps_);
-				asyncGenerator = euler;
-				//else
+				if (this->timePointsOn_ == false) {
+					EulerScheme<1, T> euler(this->model_, delta, this->numberSteps_);
+					asyncGenerator = std::bind(&EulerScheme<1,T>::simulate,
+						&euler,std::placeholders::_1);
+				}
+				else if (this->timePointsOn_ == true) {
+					EulerScheme<1, T> euler(this->model_);
+					asyncGeneratorTP = std::bind(&EulerScheme<1, T>::simulateWithTimePoints, 
+						&euler, std::placeholders::_1,std::placeholders::_2);
+				}				
 			}
 			break;
 			case FDMScheme::MilsteinScheme:
 			{
-				MilsteinScheme<1, T> milstein(this->model_, delta, this->numberSteps_);
-				asyncGenerator = milstein;
+				if (this->timePointsOn_ == false) {
+					MilsteinScheme<1, T> milstein(this->model_, delta, this->numberSteps_);
+					asyncGenerator = std::bind(&MilsteinScheme<1,T>::simulate,
+						&milstein,std::placeholders::_1);
+				}
+				else if (this->timePointsOn_ == true) {
+					MilsteinScheme<1, T> milstein(this->model_);
+					asyncGeneratorTP = std::bind(&MilsteinScheme<1,T>::simulateWithTimePoints,
+						&milstein,std::placeholders::_1,std::placeholders::_2);
+				}
 			}
 			break;
 			}
@@ -191,9 +206,17 @@ namespace finite_difference_method {
 			PathValuesType<std::future<PathValuesType<T>>> futures;
 			futures.reserve(iterations);
 
-			for (std::size_t i = 0; i < iterations; ++i) {
-				futures.emplace_back(std::async(std::launch::async, asyncGenerator, rd_()));
+			if (this->timePointsOn_ == false) {
+				for (std::size_t i = 0; i < iterations; ++i) {
+					futures.emplace_back(std::async(std::launch::async, asyncGenerator, rd_()));
+				}
 			}
+			else if (this->timePointsOn_ == true) {
+				for (std::size_t i = 0; i < iterations; ++i) {
+					futures.emplace_back(std::async(std::launch::async, asyncGeneratorTP, rd_(), std::ref(this->timePoints_)));
+				}
+			}
+			
 
 			PathValuesType<PathValuesType<T>> paths;
 			paths.reserve(iterations);
@@ -209,41 +232,101 @@ namespace finite_difference_method {
 
 	template<typename T>
 	class Fdm<2, T> :public FdmBuilder<2, T, T, T,T> {
+	private:
+		std::random_device rd_;
+
 	public:
 		Fdm(std::tuple<std::shared_ptr<Sde<T, T,T,T>>, std::shared_ptr<Sde<T, T,T,T>>> const &model,
-			T const &terminationTime,T const &correlation = 0.0, std::size_t numberSteps = 360)
+			T const &terminationTime,T correlation = 0.0, std::size_t numberSteps = 360)
 			:FdmBuilder<2, T, T,T,T>{ model,terminationTime,correlation,numberSteps } {}
 
 		Fdm(std::shared_ptr<Sde<T, T, T, T>> const &factor1,
 			std::shared_ptr<Sde<T, T, T, T>> const &factor2,
-			T const &terminationTime, T const &correlation = 0.0,std::size_t numberSteps = 360)
+			T const &terminationTime, T correlation = 0.0,std::size_t numberSteps = 360)
 			:FdmBuilder<2, T, T, T,T>{ factor1,factor2,terminationTime,correlation,numberSteps } {}
 
 		Fdm(ISde<T, T,T,T> const &isde1, T const &init1,
 			ISde<T, T,T,T> const &isde2, T const &init2,
-			T const &terminationTime,T const &correlation = 0.0,
+			T const &terminationTime,T correlation = 0.0,
 			std::size_t numberSteps = 360)
 			:FdmBuilder<2, T, T, T,T>{ isde1,init1,isde2,init2,terminationTime,
 			correlation,numberSteps } {}
 
 		Fdm(std::tuple<std::shared_ptr<Sde<T, T, T, T>>, std::shared_ptr<Sde<T, T, T, T>>> const &model,
-			TimePointsType<T> const &timePoints, T const &correlation = 0.0)
+			TimePointsType<T> const &timePoints, T correlation = 0.0)
 			:FdmBuilder<2, T, T, T, T>{ model,timePoints,correlation} {}
 
 		Fdm(std::shared_ptr<Sde<T, T, T, T>> const &factor1,
 			std::shared_ptr<Sde<T, T, T, T>> const &factor2,
-			TimePointsType<T> const &timePoints, T const &correlation = 0.0)
+			TimePointsType<T> const &timePoints, T correlation = 0.0)
 			:FdmBuilder<2, T, T, T, T>{ factor1,factor2,timePoints,correlation } {}
 
 		Fdm(ISde<T, T, T, T> const &isde1, T const &init1,
 			ISde<T, T, T, T> const &isde2, T const &init2,
-			TimePointsType<T> const &timePoints, T const &correlation = 0.0)
+			TimePointsType<T> const &timePoints, T correlation = 0.0)
 			:FdmBuilder<2, T, T, T, T>{ isde1,init1,isde2,init2,timePoints,
 			correlation} {}
 
 
-		PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,FDMScheme scheme = FDMScheme::EulerScheme) override {
-			throw std::exception("Not yet implemented");
+		PathValuesType<PathValuesType<T>> operator()(std::size_t iterations,
+			FDMScheme scheme = FDMScheme::EulerScheme)override {
+
+			asyncKernel<T, std::random_device::result_type> asyncGenerator = nullptr;
+			asyncKernel<T, std::random_device::result_type, TimePointsType<T>&> asyncGeneratorTP = nullptr;
+			T delta = (this->terminationTime_ / static_cast<T>(this->numberSteps_));
+
+			switch (scheme) {
+			case FDMScheme::EulerScheme:
+			{
+				if (this->timePointsOn_ == false) {
+					EulerScheme<2, T> euler(std::make_tuple(this->factor1_,this->factor2_),
+						this->correlation_,delta, this->numberSteps_);
+					asyncGenerator = std::bind(&EulerScheme<2, T>::simulate,
+						&euler, std::placeholders::_1);
+				}
+				else if (this->timePointsOn_ == true) {
+					EulerScheme<2, T> euler(std::make_tuple(this->factor1_,this->factor2_),
+						this->correlation_);
+					asyncGeneratorTP = std::bind(&EulerScheme<2, T>::simulateWithTimePoints,
+						&euler, std::placeholders::_1, std::placeholders::_2);
+				}
+			}
+			break;
+			case FDMScheme::MilsteinScheme:
+			{
+				if (this->timePointsOn_ == false) {
+					throw std::exception("Not yet implemented.");
+				}
+				else if (this->timePointsOn_ == true) {
+					throw std::exception("Not yet implemented.");
+				}
+			}
+			break;
+			}
+
+			PathValuesType<std::future<PathValuesType<T>>> futures;
+			futures.reserve(iterations);
+
+			if (this->timePointsOn_ == false) {
+				for (std::size_t i = 0; i < iterations; ++i) {
+					futures.emplace_back(std::async(std::launch::async, asyncGenerator, rd_()));
+				}
+			}
+			else if (this->timePointsOn_ == true) {
+				for (std::size_t i = 0; i < iterations; ++i) {
+					futures.emplace_back(std::async(std::launch::async, asyncGeneratorTP, rd_(), std::ref(this->timePoints_)));
+				}
+			}
+
+
+			PathValuesType<PathValuesType<T>> paths;
+			paths.reserve(iterations);
+
+			for (auto &path : futures) {
+				paths.emplace_back(std::move(path.get()));
+			}
+
+			return paths;
 		}
 
 	};
