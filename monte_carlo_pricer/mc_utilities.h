@@ -2,10 +2,12 @@
 #if !defined(_MC_UTILITIES_H_)
 #define _MC_UTILITIES_H_
 
+#include<cassert>
 #include<functional>
 
 namespace mc_utilities {
 
+	constexpr static double PI{ 3.14159265358979323846264338327950288419716939937510 };
 
 	enum class withRespectTo {
 		firstArg,
@@ -29,11 +31,6 @@ namespace mc_utilities {
 		inline double step()const { return step_; }
 
 		virtual std::function<T(Args...)> operator()(std::function<T(Args...)> &&fun, withRespectTo withRespectEnum) = 0;
-		/*{
-			return [=](T arg) {
-				return ((fun(arg + 0.5 * (this->step_)) - fun(arg - 0.5 * (this->step_))) / (this->step_));
-			};
-		}*/
 	};
 
 	template<std::size_t Order,
@@ -69,7 +66,6 @@ namespace mc_utilities {
 			}
 		}
 	};
-
 
 }
 

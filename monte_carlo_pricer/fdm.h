@@ -295,10 +295,16 @@ namespace finite_difference_method {
 			case FDMScheme::MilsteinScheme:
 			{
 				if (this->timePointsOn_ == false) {
-					throw std::exception("Not yet implemented.");
+					MilsteinScheme<2, T> milstein(std::make_tuple(this->factor1_, this->factor2_),
+						this->correlation_, delta, this->numberSteps_);
+					asyncGenerator = std::bind(&MilsteinScheme<2, T>::simulate,
+						&milstein, std::placeholders::_1);
 				}
 				else if (this->timePointsOn_ == true) {
-					throw std::exception("Not yet implemented.");
+					MilsteinScheme<2, T> milstein(std::make_tuple(this->factor1_, this->factor2_),
+						this->correlation_);
+					asyncGeneratorTP = std::bind(&MilsteinScheme<2, T>::simulateWithTimePoints,
+						&milstein, std::placeholders::_1,std::placeholders::_2);
 				}
 			}
 			break;

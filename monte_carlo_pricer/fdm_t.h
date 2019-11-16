@@ -75,6 +75,9 @@ void fdm_heston() {
 	auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 	std::cout << "Euler took: " << end << " seconds\n";
 	start = std::chrono::system_clock::now();
+	auto paths_milstein = heston_fdm(50000, FDMScheme::MilsteinScheme);
+	end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
+	std::cout << "Milstein took: " << end << " seconds\n";
 	std::cout << "\n";
 
 	// To see few generated values:
@@ -82,6 +85,14 @@ void fdm_heston() {
 		std::cout << t << " paths: \n";
 		for (std::size_t v = 0; v < 10; ++v) {
 			std::cout << paths_euler[t][v] << ", ";
+		}
+		std::cout << "\n";
+	}
+	// To see few generated values:
+	for (std::size_t t = 0; t < 30; ++t) {
+		std::cout << t << " paths: \n";
+		for (std::size_t v = 0; v < 10; ++v) {
+			std::cout << paths_milstein[t][v] << ", ";
 		}
 		std::cout << "\n";
 	}
