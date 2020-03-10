@@ -1,4 +1,5 @@
 Debug/
+Release/
 .vs/
 monte_carlo_pricer.sln
 monte_carlo_pricer/monte_carlo_pricer.vcxproj

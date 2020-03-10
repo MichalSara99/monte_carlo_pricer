@@ -24,12 +24,12 @@ void fdm_gbm() {
 	auto drift = gbm.drift();
 
 	constexpr std::size_t factors = GeometricBrownianMotion<>::FactorCount;
-	Fdm<factors,double> gbm_fdm{ sde,1.0,720 };
+	Fdm<factors,double> gbm_fdm{ sde,1.0,3*360 };
 	auto times = gbm_fdm.timeResolution();
 
 	std::cout << "timing: \n";
 	auto start = std::chrono::system_clock::now();
-	auto paths_euler = gbm_fdm(50000);
+	auto paths_euler = gbm_fdm(100'000);
 	auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 	std::cout << "Euler took: " << end << " seconds\n";
 	start = std::chrono::system_clock::now();
