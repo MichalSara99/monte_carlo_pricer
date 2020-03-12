@@ -33,7 +33,7 @@ void fdm_gbm() {
 	auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 	std::cout << "Euler took: " << end << " seconds\n";
 	start = std::chrono::system_clock::now();
-	auto paths_milstein = gbm_fdm(50000,FDMScheme::MilsteinScheme);
+	auto paths_milstein = gbm_fdm(100'000,FDMScheme::MilsteinScheme);
 	end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 	std::cout << "Milstein took: " << end << " seconds\n";
 	std::cout << "\n";
@@ -71,11 +71,11 @@ void fdm_heston() {
 
 	std::cout << "timing: \n";
 	auto start = std::chrono::system_clock::now();
-	auto paths_euler = heston_fdm(50000);
+	auto paths_euler = heston_fdm(90'000);
 	auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 	std::cout << "Euler took: " << end << " seconds\n";
 	start = std::chrono::system_clock::now();
-	auto paths_milstein = heston_fdm(50000, FDMScheme::MilsteinScheme);
+	auto paths_milstein = heston_fdm(90'000, FDMScheme::MilsteinScheme);
 	end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 	std::cout << "Milstein took: " << end << " seconds\n";
 	std::cout << "\n";

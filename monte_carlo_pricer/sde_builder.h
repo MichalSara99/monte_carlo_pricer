@@ -229,8 +229,8 @@ namespace sde_builder {
 		T rho_;
 
 	public:
-		HestonModel(T const &mu, T const &sigma, T const &kappa,T const &theta,T const &etha,
-			T const &init1,T const &init2,T const &rho=0.0)
+		HestonModel(T mu, T sigma, T kappa,T theta,T etha,
+			T init1,T init2,T rho=0.0)
 			:mu_{ mu }, sigma_{ sigma }, kappa_{ kappa }, theta_{theta},etha_{etha},
 			init1_{ init1 }, init2_{ init2 }, rho_{rho} {}
 
