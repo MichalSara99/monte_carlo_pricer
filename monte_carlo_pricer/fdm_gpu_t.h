@@ -6,6 +6,7 @@
 #include"fdm_gpu.h"
 #include<iostream>
 #include<chrono>
+#include<iomanip>
 
 
 using namespace finite_difference_method_gpu;
@@ -24,30 +25,30 @@ void fdm_gbm_gpu() {
 	auto drift = gbm.drift();
 
 	constexpr std::size_t factors = GeometricBrownianMotionGPU<>::FactorCount;
-	FdmGPU<factors, double> gbm_fdm{1.0,3*360 };
+	FdmGPU<factors, double> gbm_fdm{1.0,2*360 };
 	auto times = gbm_fdm.timeResolution();
 
 	std::cout << "timing: \n";
 	//braces here are to release the memory allocation before generating another collection of paths:
-	
-		auto start = std::chrono::system_clock::now();
-		auto paths_euler = gbm_fdm(sde, 100'000);
-		auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
-		std::cout << "Euler took: " << end << " seconds\n";
-	
 	{
 		auto start = std::chrono::system_clock::now();
-		auto paths_milstein = gbm_fdm(sde, 100'000, FDMScheme::MilsteinScheme);
+		auto paths_euler = gbm_fdm(sde, 70'000);
+		auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
+		std::cout << "Euler took: " << end << " seconds\n";
+
+	}
+		auto start = std::chrono::system_clock::now();
+		auto paths_milstein = gbm_fdm(sde, 70'000, FDMScheme::MilsteinScheme);
 		auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 		std::cout << "Milstein took: " << end << " seconds\n";
 		std::cout << "\n";
-	}
+	
 
 	// To see few generated values:
 	for (std::size_t t = 0; t < 30; ++t) {
 		std::cout << t << " paths: \n";
 		for (std::size_t v = 0; v < 10; ++v) {
-			std::cout << paths_euler[t][v] << ", ";
+			std::cout << paths_milstein[t][v] << ", ";
 		}
 		std::cout << "\n";
 	}
@@ -72,37 +73,31 @@ void fdm_heston_gpu() {
 	std::cout << "Number of factors: " << HestonModel<>::FactorCount << "\n";
 
 	constexpr std::size_t factors = HestonModel<>::FactorCount;
-	FdmGPU<HestonModelGPU<>::FactorCount,double> heston_fdm{ 1.0f,0.8f,3 * 360 };
+	FdmGPU<HestonModelGPU<>::FactorCount,double> heston_fdm{ 1.0f,0.8f,2 * 360 };
 	auto times = heston_fdm.timeResolution();
 
 	std::cout << "timing: \n";
 	{
 		auto start = std::chrono::system_clock::now();
-		auto paths_euler = heston_fdm(hest.sdes(), 100'000);
+		auto paths_euler = heston_fdm(hest.sdes(), 70'000);
 		auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 		std::cout << "Euler took: " << end << " seconds\n";
 	}
 	
 		auto start = std::chrono::system_clock::now();
-		auto paths_milstein = heston_fdm(hest.sdes(), 100'000, FDMScheme::MilsteinScheme);
+		auto paths_milstein = heston_fdm(hest.sdes(), 70'000, FDMScheme::MilsteinScheme);
 		auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 		std::cout << "Milstein took: " << end << " seconds\n";
 		std::cout << "\n";
 	
 
-	//// To see few generated values:
-	//for (std::size_t t = 0; t < 30; ++t) {
-	//	std::cout << t << " paths: \n";
-	//	for (std::size_t v = 0; v < 10; ++v) {
-	//		std::cout << paths_euler[t][v] << ", ";
-	//	}
-	//	std::cout << "\n";
-	//}
+	
+
 	// To see few generated values:
 	for (std::size_t t = 0; t < 30; ++t) {
 		std::cout << t << " paths: \n";
 		for (std::size_t v = 0; v < 10; ++v) {
-			std::cout << paths_milstein[t][v] << ", ";
+			std::cout <<std::setprecision(7)<< paths_milstein[t][v] << ", ";
 		}
 		std::cout << "\n";
 	}

@@ -24,16 +24,16 @@ void fdm_gbm() {
 	auto drift = gbm.drift();
 
 	constexpr std::size_t factors = GeometricBrownianMotion<>::FactorCount;
-	Fdm<factors,double> gbm_fdm{ sde,1.0,3*360 };
+	Fdm<factors,double> gbm_fdm{ sde,1.0,2*360 };
 	auto times = gbm_fdm.timeResolution();
 
 	std::cout << "timing: \n";
 	auto start = std::chrono::system_clock::now();
-	auto paths_euler = gbm_fdm(100'000);
+	auto paths_euler = gbm_fdm(70'000);
 	auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 	std::cout << "Euler took: " << end << " seconds\n";
 	start = std::chrono::system_clock::now();
-	auto paths_milstein = gbm_fdm(100'000,FDMScheme::MilsteinScheme);
+	auto paths_milstein = gbm_fdm(70'000,FDMScheme::MilsteinScheme);
 	end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 	std::cout << "Milstein took: " << end << " seconds\n";
 	std::cout << "\n";
@@ -66,19 +66,21 @@ void fdm_heston() {
 	std::cout << "Number of factors: " << HestonModel<>::FactorCount << "\n";
 
 	constexpr std::size_t factors = HestonModel<>::FactorCount;
-	Fdm<HestonModel<>::FactorCount, float> heston_fdm{ hest.model(),1.0,0.8f };
+	Fdm<HestonModel<>::FactorCount, float> heston_fdm{ hest.model(),1.0,0.8f,2 * 360 };
 	auto times = heston_fdm.timeResolution();
 
 	std::cout << "timing: \n";
 	auto start = std::chrono::system_clock::now();
-	auto paths_euler = heston_fdm(90'000);
+	auto paths_euler = heston_fdm(70'000);
 	auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 	std::cout << "Euler took: " << end << " seconds\n";
-	start = std::chrono::system_clock::now();
-	auto paths_milstein = heston_fdm(90'000, FDMScheme::MilsteinScheme);
-	end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
-	std::cout << "Milstein took: " << end << " seconds\n";
-	std::cout << "\n";
+	{
+		start = std::chrono::system_clock::now();
+		auto paths_milstein = heston_fdm(70'000, FDMScheme::MilsteinScheme);
+		end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
+		std::cout << "Milstein took: " << end << " seconds\n";
+		std::cout << "\n";
+	}
 
 	// To see few generated values:
 	for (std::size_t t = 0; t < 30; ++t) {
@@ -89,13 +91,13 @@ void fdm_heston() {
 		std::cout << "\n";
 	}
 	// To see few generated values:
-	for (std::size_t t = 0; t < 30; ++t) {
-		std::cout << t << " paths: \n";
-		for (std::size_t v = 0; v < 10; ++v) {
-			std::cout << paths_milstein[t][v] << ", ";
-		}
-		std::cout << "\n";
-	}
+	//for (std::size_t t = 0; t < 30; ++t) {
+	//	std::cout << t << " paths: \n";
+	//	for (std::size_t v = 0; v < 10; ++v) {
+	//		std::cout << paths_milstein[t][v] << ", ";
+	//	}
+	//	std::cout << "\n";
+	//}
 }
 
 

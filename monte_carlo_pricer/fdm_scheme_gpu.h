@@ -201,13 +201,16 @@ namespace finite_difference_method_gpu {
 			auto init2 = std::get<2>(std::get<1>(sdes));
 
 			auto randExtent = concurrency::extent<1>(iterations);
-			sobol_rng_collection<sobol_rng<1>, 1> sbRand(randExtent, seed);
+			sobol_rng_collection<sobol_rng<4>, 1> sbRand(randExtent, seed);
 			auto simExtent = concurrency::extent<2>(iterations, numberSteps);
 			concurrency::array_view<T, 2> sims(simExtent);
 
+			typedef sobol_rng<4>::sobol_number<T> sobol_float_number;
+			concurrency::array<sobol_float_number, 1> rand_out_data(randExtent);
+
 			NormalVariate<T> normalRand(0.0, 1.0);
 
-			concurrency::parallel_for_each(randExtent, [=](concurrency::index<1> simIdx)restrict(amp) {
+			concurrency::parallel_for_each(randExtent, [=, &rand_out_data](concurrency::index<1> simIdx)restrict(amp) {
 				auto rnd = sbRand[simIdx];
 				T firstSpot{ init1 };
 				T secondSpot{ init2 };
@@ -216,11 +219,16 @@ namespace finite_difference_method_gpu {
 				T z1{};
 				T z2{};
 				rnd.skip(sbRand.direction_numbers(), simIdx[0]);
+				sobol_float_number& sf_num = rand_out_data[simIdx];
 
 				sims(simIdx[0], 0) = init1;
 				for (std::size_t t = 1; t < numberSteps; ++t) {
-					z1 = normalRand(rnd.get_single(1), rnd.get_single(1));
-					z2 = normalRand(rnd.get_single(1), rnd.get_single(1));
+					sf_num[0] = rnd.get_single(1);
+					sf_num[1] = rnd.get_single(2);
+					sf_num[2] = rnd.get_single(3);
+					sf_num[3] = rnd.get_single(4);
+					z1 = normalRand(sf_num[0], sf_num[1]);
+					z2 = normalRand(sf_num[2], sf_num[3]);
 
 					firstSpotNew = firstSpot +
 						drift1((t - 1)*delta, firstSpot, secondSpot) * delta +
@@ -269,11 +277,13 @@ namespace finite_difference_method_gpu {
 			sobol_rng_collection<sobol_rng<1>, 1> sbRand(randExtent, seed);
 			auto simExtent = concurrency::extent<2>(iterations, numberSteps);
 			concurrency::array_view<T, 2> sims(simExtent);
+			typedef sobol_rng<4>::sobol_number<T> sobol_float_number;
+			concurrency::array<sobol_float_number, 1> rand_out_data(randExtent);
 			concurrency::array_view<const T, 1> tmps(numberSteps, timePoints);
 
 			NormalVariate<T> normalRand(0.0, 1.0);
 
-			concurrency::parallel_for_each(randExtent, [=](concurrency::index<1> simIdx)restrict(amp) {
+			concurrency::parallel_for_each(randExtent, [=,&rand_out_data](concurrency::index<1> simIdx)restrict(amp) {
 				auto rnd = sbRand[simIdx];
 				T firstSpot{ init1 };
 				T secondSpot{ init2 };
@@ -282,11 +292,16 @@ namespace finite_difference_method_gpu {
 				T z1{};
 				T z2{};
 				rnd.skip(sbRand.direction_numbers(), simIdx[0]);
+				sobol_float_number& sf_num = rand_out_data[simIdx];
 
 				sims(simIdx[0], 0) = init1;
 				for (std::size_t t = 1; t < numberSteps; ++t) {
-					z1 = normalRand(rnd.get_single(1), rnd.get_single(1));
-					z2 = normalRand(rnd.get_single(1), rnd.get_single(1));
+					sf_num[0] = rnd.get_single(1);
+					sf_num[1] = rnd.get_single(2);
+					sf_num[2] = rnd.get_single(3);
+					sf_num[3] = rnd.get_single(4);
+					z1 = normalRand(sf_num[0], sf_num[1]);
+					z2 = normalRand(sf_num[2], sf_num[3]);
 
 					firstSpotNew = firstSpot +
 						drift1(tmps[t-1], firstSpot, secondSpot) * (tmps[t]- tmps[t - 1]) +
@@ -501,10 +516,12 @@ namespace finite_difference_method_gpu {
 			sobol_rng_collection<sobol_rng<1>, 1> sbRand(randExtent, seed);
 			auto simExtent = concurrency::extent<2>(iterations, numberSteps);
 			concurrency::array_view<T, 2> sims(simExtent);
+			typedef sobol_rng<4>::sobol_number<T> sobol_float_number;
+			concurrency::array<sobol_float_number, 1> rand_out_data(randExtent);
 
 			NormalVariate<T> normalRand(0.0, 1.0);
 
-			concurrency::parallel_for_each(randExtent, [=](concurrency::index<1> simIdx)restrict(amp) {
+			concurrency::parallel_for_each(randExtent, [=,&rand_out_data](concurrency::index<1> simIdx)restrict(amp) {
 				auto rnd = sbRand[simIdx];
 				T firstSpot{ init1 };
 				T secondSpot{ init2 };
@@ -513,10 +530,15 @@ namespace finite_difference_method_gpu {
 				T z1{};
 				T z2{};
 				rnd.skip(sbRand.direction_numbers(), simIdx[0]);
+				sobol_float_number& sf_num = rand_out_data[simIdx];
 				sims(simIdx[0], 0) = init1;
 				for (std::size_t t = 1; t < numberSteps; ++t) {
-					z1 = normalRand(rnd.get_single(1), rnd.get_single(1));
-					z2 = normalRand(rnd.get_single(1), rnd.get_single(1));
+					sf_num[0] = rnd.get_single(1);
+					sf_num[1] = rnd.get_single(2);
+					sf_num[2] = rnd.get_single(3);
+					sf_num[3] = rnd.get_single(4);
+					z1 = normalRand(sf_num[0], sf_num[1]);
+					z2 = normalRand(sf_num[2], sf_num[3]);
 
 					firstSpotNew = firstSpot +
 						drift1((t - 1)*delta, firstSpot, secondSpot)*delta +
@@ -593,11 +615,13 @@ namespace finite_difference_method_gpu {
 			sobol_rng_collection<sobol_rng<1>, 1> sbRand(randExtent, seed);
 			auto simExtent = concurrency::extent<2>(iterations, numberSteps);
 			concurrency::array_view<T, 2> sims(simExtent);
+			typedef sobol_rng<4>::sobol_number<T> sobol_float_number;
+			concurrency::array<sobol_float_number, 1> rand_out_data(randExtent);
 			concurrency::array_view<const T, 1> tmps(numberSteps, timePoints);
 
 			NormalVariate<T> normalRand(0.0, 1.0);
 
-			concurrency::parallel_for_each(randExtent, [=](concurrency::index<1> simIdx)restrict(amp) {
+			concurrency::parallel_for_each(randExtent, [=,&rand_out_data](concurrency::index<1> simIdx)restrict(amp) {
 				auto rnd = sbRand[simIdx];
 				T firstSpot{ init1 };
 				T secondSpot{ init2 };
@@ -606,8 +630,16 @@ namespace finite_difference_method_gpu {
 				T z1{};
 				T z2{};
 				rnd.skip(sbRand.direction_numbers(), simIdx[0]);
+				sobol_float_number& sf_num = rand_out_data[simIdx];
 				sims(simIdx[0], 0) = init1;
 				for (std::size_t t = 1; t < numberSteps; ++t) {
+					sf_num[0] = rnd.get_single(1);
+					sf_num[1] = rnd.get_single(2);
+					sf_num[2] = rnd.get_single(3);
+					sf_num[3] = rnd.get_single(4);
+					z1 = normalRand(sf_num[0], sf_num[1]);
+					z2 = normalRand(sf_num[2], sf_num[3]);
+
 					firstSpotNew = firstSpot +
 						drift1(tmps[t - 1], firstSpot, secondSpot)*(tmps[t]- tmps[t - 1]) +
 						diffusion1(tmps[t - 1], firstSpot, secondSpot)*

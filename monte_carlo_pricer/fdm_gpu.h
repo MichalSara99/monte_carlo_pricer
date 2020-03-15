@@ -108,18 +108,19 @@ namespace finite_difference_method_gpu {
 			FDMScheme scheme = FDMScheme::EulerScheme) {
 
 			T delta = (this->terminationTime_ / static_cast<T>(this->numberSteps_));
-			std::size_t seed = 56489;
+			// fixed seed for debug
+			//std::size_t seed = 56489;
 			switch (scheme) {
 			case FDMScheme::EulerScheme:
 			{
 				if (this->timePointsOn_ == false) {
 					EulerSchemeGPU<1, T> euler(delta, this->numberSteps_);
-					return euler.simulate(sde, iterations, seed);
+					return euler.simulate(sde, iterations, rd_());
 				}
 				else {
 					EulerSchemeGPU<1, T> euler;
 					const TimePointsType<T> timePoints = this->timePoints_;
-					return euler.simulateWithTimePoints(sde, iterations,timePoints, seed);
+					return euler.simulateWithTimePoints(sde, iterations,timePoints, rd_());
 				}
 			}
 			break;
@@ -127,12 +128,12 @@ namespace finite_difference_method_gpu {
 			{
 				if (this->timePointsOn_ == false) {
 					MilsteinSchemeGPU<1, T> milstein(delta, this->numberSteps_);
-					return milstein.simulate(sde, iterations, seed);
+					return milstein.simulate(sde, iterations, rd_());
 				}
 				else {
 					MilsteinSchemeGPU<1, T> milstein;
 					const TimePointsType<T> timePoints = this->timePoints_;
-					return milstein.simulateWithTimePoints(sde, iterations, timePoints, seed);
+					return milstein.simulateWithTimePoints(sde, iterations, timePoints, rd_());
 				}
 			}
 			break;
@@ -140,12 +141,12 @@ namespace finite_difference_method_gpu {
 			{
 				if (this->timePointsOn_ == false) {
 					EulerSchemeGPU<1, T> euler(delta, this->numberSteps_);
-					return euler.simulate(sde, iterations, seed);
+					return euler.simulate(sde, iterations, rd_());
 				}
 				else {
 					EulerSchemeGPU<1, T> euler;
 					const TimePointsType<T> timePoints = this->timePoints_;
-					return euler.simulateWithTimePoints(sde, iterations, timePoints, seed);
+					return euler.simulateWithTimePoints(sde, iterations, timePoints, rd_());
 				}
 			}
 			}
@@ -169,18 +170,19 @@ namespace finite_difference_method_gpu {
 			FDMScheme scheme = FDMScheme::EulerScheme) {
 
 			T delta = (this->terminationTime_ / static_cast<T>(this->numberSteps_));
-			std::size_t seed = 56489;
+			// fixed seed for debug
+			//std::size_t seed = 56489;
 			switch (scheme) {
 			case FDMScheme::EulerScheme:
 			{
 				if (this->timePointsOn_ == false) {
 					EulerSchemeGPU<2, T> euler(delta, this->numberSteps_, this->correlation_);
-					return euler.simulate(sdes, iterations, seed);
+					return euler.simulate(sdes, iterations, rd_());
 				}
 				else {
 					EulerSchemeGPU<2, T> euler(this->correlation_);
 					const TimePointsType<T> timePoints = this->timePoints_;
-					return euler.simulateWithTimePoints(sdes, iterations, timePoints, seed);
+					return euler.simulateWithTimePoints(sdes, iterations, timePoints, rd_());
 				}
 			}
 			break;
@@ -188,12 +190,12 @@ namespace finite_difference_method_gpu {
 			{
 				if (this->timePointsOn_ == false) {
 					MilsteinSchemeGPU<2, T> milstein(delta, this->numberSteps_, this->correlation_);
-					return milstein.simulate(sdes, iterations, seed);
+					return milstein.simulate(sdes, iterations, rd_());
 				}
 				else {
 					MilsteinSchemeGPU<2, T> milstein(this->correlation_);
 					const TimePointsType<T> timePoints = this->timePoints_;
-					return milstein.simulateWithTimePoints(sdes, iterations, timePoints, seed);
+					return milstein.simulateWithTimePoints(sdes, iterations, timePoints, rd_());
 				}
 			}
 			break;
@@ -201,12 +203,12 @@ namespace finite_difference_method_gpu {
 			{
 				if (this->timePointsOn_ == false) {
 					EulerSchemeGPU<2, T> euler(delta, this->numberSteps_, this->correlation_);
-					return euler.simulate(sdes, iterations, seed);
+					return euler.simulate(sdes, iterations, rd_());
 				}
 				else {
 					EulerSchemeGPU<2, T> euler(this->correlation_);
 					const TimePointsType<T> timePoints = this->timePoints_;
-					return euler.simulateWithTimePoints(sdes, iterations, timePoints, seed);
+					return euler.simulateWithTimePoints(sdes, iterations, timePoints, rd_());
 				}
 			}
 			}
