@@ -1,5 +1,6 @@
 #pragma once
 #if !defined(_EXAMPLES_H_)
+#define _EXAMPLES_H_
 
 #include<iostream>
 #include<string>
@@ -21,7 +22,7 @@ void europeanOptionsGBMEuler() {
 	double s{ 100.0 };
 	double maturityInYears{ 1.0 };
 	std::size_t numberSteps{ 720 }; // two times a day
-	std::size_t simuls{ 50000 };
+	std::size_t simuls{ 70'000 };
 
 	// Construct the model:
 	GeometricBrownianMotion<> gbm{ rate,sigma,s };
@@ -33,6 +34,15 @@ void europeanOptionsGBMEuler() {
 	auto paths_euler = fdm_gbm(simuls, FDMScheme::EulerScheme);
 	auto end = std::chrono::duration<double>(std::chrono::system_clock::now() - start).count();
 	std::cout << "Euler scheme for GBM<1> took: " << end << " seconds.\n";
+
+	// last values:
+	for (std::size_t t = 0; t < 30; ++t) {
+		std::cout << t << " paths: \n";
+		std::cout << paths_euler[t][719] << ", ";
+		std::cout << "\n";
+	}
+	std::cout << "==============================\n";
+
 
 	// Construct call payoff of the option:
 	double call_strike{ 100.0 };

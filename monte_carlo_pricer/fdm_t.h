@@ -13,11 +13,11 @@ using namespace sde_builder;
 
 void fdm_gbm() {
 
-	double r{ 0.05 };
-	double sigma{ 0.01 };
+	double rate{ 0.001 };
+	double sigma{ 0.005 };
 	double s{ 100.0 };
 
-	GeometricBrownianMotion<> gbm{ r,sigma,s };
+	GeometricBrownianMotion<> gbm{ rate,sigma,s };
 	std::cout << "Number of factors: " << GeometricBrownianMotion<>::FactorCount << "\n";
 	auto sde = gbm.model();
 	auto diffusion = gbm.diffusion();
@@ -38,6 +38,13 @@ void fdm_gbm() {
 	std::cout << "Milstein took: " << end << " seconds\n";
 	std::cout << "\n";
 
+	// last values:
+	for (std::size_t t = 0; t < 30; ++t) {
+		std::cout << t << " paths: \n";
+		std::cout << paths_euler[t][319] << ", ";
+		std::cout << "\n";
+	}
+	std::cout << "==============================\n";
 	// To see few generated values:
 	for (std::size_t t = 0; t < 30; ++t) {
 		std::cout << t << " paths: \n";

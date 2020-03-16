@@ -70,30 +70,6 @@ namespace mc_utilities {
 	};
 
 
-
-	template<typename T=double,
-			typename =typename std::enable_if<std::is_floating_point<T>::value>::type>
-	class NormalVariate {
-	private:
-		T mu_;
-		T sig_;
-
-	public:
-		NormalVariate(T mu,T sig)
-			:mu_{mu},sig_{sig}{}
-
-		T operator()(T u0, T u1)const restrict(amp, cpu) {
-			T r = concurrency::fast_math::sqrt(static_cast<T>(-2.0)*concurrency::fast_math::log(u0));
-			T theta = static_cast<T>(PI)*u1;
-			T z0 = r * concurrency::fast_math::sin(theta);
-			T z1 = r * concurrency::fast_math::cos(theta);
-			return (z0*sig_ + mu_);
-		}
-
-	};
-
-
-
 }
 
 
